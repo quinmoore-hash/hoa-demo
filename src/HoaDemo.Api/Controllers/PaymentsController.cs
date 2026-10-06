@@ -1,20 +1,26 @@
 using System;
-using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web.Http;
 using HoaDemo.Api.Data;
 using HoaDemo.Api.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HoaDemo.Api.Controllers
 {
-    [RoutePrefix("api/payments")]
-    public class PaymentsController : ApiController
+    [ApiController]
+    [Route("api/payments")]
+    public class PaymentsController : ControllerBase
     {
-        private readonly HoaContext _db = new HoaContext();
+        private readonly HoaContext _db;
 
-        [HttpGet, Route("")]
-        public async Task<IHttpActionResult> GetAll(int? assessmentId = null)
+        public PaymentsController(HoaContext db)
+        {
+            _db = db;
+        }
+
+        [HttpGet("")]
+        public async Task<IActionResult> GetAll(int? assessmentId = null)
         {
             var query = _db.Payments.AsQueryable();
             if (assessmentId.HasValue) query = query.Where(p => p.AssessmentId == assessmentId.Value);
@@ -22,24 +28,17 @@ namespace HoaDemo.Api.Controllers
             return Ok(await query.OrderByDescending(p => p.PaidOn).ToListAsync());
         }
 
-        [HttpPost, Route("")]
-        public async Task<IHttpActionResult> Create(Payment payment)
+        [HttpPost("")]
+        public async Task<IActionResult> Create(Payment payment)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-            if (payment.Amount <= 0m) return BadRequest("Amount must be positive.");
-            if (await _db.Assessments.FindAsync(payment.AssessmentId) == null) return BadRequest("Unknown assessmentId.");
+            if (payment.Amount <= 0m) return BadRequest(new { message = "Amount must be positive." });
+            if (await _db.Assessments.FindAsync(payment.AssessmentId) == null) return BadRequest(new { message = "Unknown assessmentId." });
 
             if (payment.PaidOn == default(DateTime)) payment.PaidOn = DateTime.Today;
 
             _db.Payments.Add(payment);
             await _db.SaveChangesAsync();
             return Created($"api/payments/{payment.Id}", payment);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing) _db.Dispose();
-            base.Dispose(disposing);
         }
     }
 }

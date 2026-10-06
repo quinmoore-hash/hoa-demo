@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "HoaDemo.Api": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "api/associations",
+      "applicationUrl": "http://localhost:5000",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

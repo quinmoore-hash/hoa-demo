@@ -1,44 +1,42 @@
-using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web.Http;
 using HoaDemo.Api.Data;
 using HoaDemo.Api.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HoaDemo.Api.Controllers
 {
-    [RoutePrefix("api/associations")]
-    public class AssociationsController : ApiController
+    [ApiController]
+    [Route("api/associations")]
+    public class AssociationsController : ControllerBase
     {
-        private readonly HoaContext _db = new HoaContext();
+        private readonly HoaContext _db;
 
-        [HttpGet, Route("")]
-        public async Task<IHttpActionResult> GetAll()
+        public AssociationsController(HoaContext db)
+        {
+            _db = db;
+        }
+
+        [HttpGet("")]
+        public async Task<IActionResult> GetAll()
         {
             return Ok(await _db.Associations.OrderBy(a => a.Name).ToListAsync());
         }
 
-        [HttpGet, Route("{id:int}")]
-        public async Task<IHttpActionResult> Get(int id)
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> Get(int id)
         {
             var association = await _db.Associations.FindAsync(id);
-            return association == null ? (IHttpActionResult)NotFound() : Ok(association);
+            return association == null ? NotFound() : Ok(association);
         }
 
-        [HttpPost, Route("")]
-        public async Task<IHttpActionResult> Create(Association association)
+        [HttpPost("")]
+        public async Task<IActionResult> Create(Association association)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
             _db.Associations.Add(association);
             await _db.SaveChangesAsync();
             return Created($"api/associations/{association.Id}", association);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing) _db.Dispose();
-            base.Dispose(disposing);
         }
     }
 }

@@ -1,14 +1,18 @@
 using System;
-using System.Data.Entity;
 using HoaDemo.Api.Models;
 
 namespace HoaDemo.Api.Data
 {
     /// <summary>Creates the database on first run and seeds a sample association.</summary>
-    public class HoaDbInitializer : CreateDatabaseIfNotExists<HoaContext>
+    public static class HoaDbInitializer
     {
-        protected override void Seed(HoaContext context)
+        public static void Initialize(HoaContext context)
         {
+            if (!context.Database.EnsureCreated())
+            {
+                return;
+            }
+
             var hoa = new Association
             {
                 Name = "Maple Ridge HOA",

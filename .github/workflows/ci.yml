@@ -7,12 +7,11 @@ on:
 
 jobs:
   build-and-test:
-    # .NET Framework 4.8 can only be built and executed on Windows.
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET SDK (build tooling only; targets net48)
+      - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x

@@ -1,18 +1,18 @@
 # HOA Demo – Homeowners Association Management API
 
-A small ASP.NET Web API 2 service for managing homeowners associations: the associations
+A small ASP.NET Core Web API service for managing homeowners associations: the associations
 themselves, their homeowners, dues assessments, and payments against those assessments.
 Late fees are computed on the fly from each association's policy.
 
-**Stack (legacy):**
+**Stack:**
 
 | Concern        | Technology                                   |
 | -------------- | -------------------------------------------- |
-| Runtime        | .NET Framework 4.8 (Windows only)            |
-| Web            | ASP.NET Web API 2 (`System.Web`, IIS-hosted) |
-| Data access    | Entity Framework 6.4 (code-first)            |
+| Runtime        | .NET 8 (cross-platform)                      |
+| Web            | ASP.NET Core (controllers)                   |
+| Data access    | Entity Framework Core 8 (SQL Server)         |
 | Database       | SQL Server (LocalDB by default)              |
-| Serialization  | Newtonsoft.Json 13                           |
+| Serialization  | System.Text.Json (camelCase, string enums)   |
 | Tests          | xUnit 2.9                                    |
 
 ## Layout
@@ -21,12 +21,11 @@ Late fees are computed on the fly from each association's policy.
 HoaDemo.sln
 src/HoaDemo.Api/
   Controllers/      Associations, Homeowners, Assessments, Payments
-  Data/             HoaContext (EF6 DbContext) + seed initializer
+  Data/             HoaContext (EF Core DbContext) + seed initializer
   Models/           Association, Homeowner, Assessment, Payment
   Services/         LateFeeCalculator
-  App_Start/        WebApiConfig (routing + JSON settings)
-  Global.asax(.cs)  Application start
-  Web.config        Connection string, EF6 provider, IIS handlers
+  Program.cs        Host, DI, JSON settings, DB create + seed
+  appsettings.json  Connection string
 tests/HoaDemo.Tests/
   LateFeeCalculatorTests.cs
 ```
@@ -59,24 +58,21 @@ See `src/HoaDemo.Api/Services/LateFeeCalculator.cs` and the tests for the exact 
 | GET    | `/api/payments?assessmentId=`          |                                                 |
 | POST   | `/api/payments`                        | `paidOn` defaults to today                      |
 
-## Running locally (Windows)
+## Running locally
 
-Prerequisites: Visual Studio 2022 (or Build Tools) with the **.NET Framework 4.8 targeting
-pack**, and **SQL Server Express LocalDB**.
+Prerequisites: the **.NET 8 SDK** and a SQL Server instance (LocalDB by default).
 
-```powershell
+```bash
 dotnet build HoaDemo.sln
 dotnet test  HoaDemo.sln
+dotnet run --project src/HoaDemo.Api   # http://localhost:5000/api/associations
 ```
 
-Open the solution in Visual Studio and run `HoaDemo.Api` with IIS Express, or point an IIS
-site at `src/HoaDemo.Api`. On first request EF6 creates the `HoaDemo` database on
-`(localdb)\MSSQLLocalDB` and seeds one association, homeowner, and assessment.
-Change the `HoaContext` connection string in `Web.config` to use another SQL Server.
+On startup EF Core creates the `HoaDemo` database (`EnsureCreated`) and seeds one association,
+homeowner, and assessment. Change `ConnectionStrings:HoaContext` in `appsettings.json` (or set
+the `ConnectionStrings__HoaContext` environment variable) to use another SQL Server.
 
 ## Known limitations
 
-* Tied to .NET Framework 4.8 / `System.Web` – builds and runs only on Windows.
-* EF6 with `CreateDatabaseIfNotExists`; no migrations – drop the database to pick up schema changes.
-* Controllers instantiate `HoaContext` directly; there is no DI container.
+* `EnsureCreated`; no migrations – drop the database to pick up schema changes.
 * No authentication.

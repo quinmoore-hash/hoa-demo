@@ -1,0 +1,23 @@
+## Build output
+[Bb]in/
+[Oo]bj/
+TestResults/
+*.user
+*.suo
+*.cache
+*.log
+
+## Visual Studio / Rider
+.vs/
+.idea/
+*.DotSettings.user
+
+## NuGet
+packages/
+*.nupkg
+project.lock.json
+
+## Local databases
+*.mdf
+*.ldf
+App_Data/

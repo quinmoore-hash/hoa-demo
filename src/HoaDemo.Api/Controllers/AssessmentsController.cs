@@ -1,21 +1,27 @@
 using System;
-using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web.Http;
 using HoaDemo.Api.Data;
 using HoaDemo.Api.Models;
 using HoaDemo.Api.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HoaDemo.Api.Controllers
 {
-    [RoutePrefix("api/assessments")]
-    public class AssessmentsController : ApiController
+    [ApiController]
+    [Route("api/assessments")]
+    public class AssessmentsController : ControllerBase
     {
-        private readonly HoaContext _db = new HoaContext();
+        private readonly HoaContext _db;
 
-        [HttpGet, Route("")]
-        public async Task<IHttpActionResult> GetAll(int? homeownerId = null)
+        public AssessmentsController(HoaContext db)
+        {
+            _db = db;
+        }
+
+        [HttpGet("")]
+        public async Task<IActionResult> GetAll(int? homeownerId = null)
         {
             var query = _db.Assessments.AsQueryable();
             if (homeownerId.HasValue) query = query.Where(a => a.HomeownerId == homeownerId.Value);
@@ -24,8 +30,8 @@ namespace HoaDemo.Api.Controllers
         }
 
         /// <summary>Returns the assessment with its balance and late fee as of today.</summary>
-        [HttpGet, Route("{id:int}")]
-        public async Task<IHttpActionResult> Get(int id)
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> Get(int id)
         {
             var assessment = await _db.Assessments
                 .Include(a => a.Payments)
@@ -52,22 +58,15 @@ namespace HoaDemo.Api.Controllers
             });
         }
 
-        [HttpPost, Route("")]
-        public async Task<IHttpActionResult> Create(Assessment assessment)
+        [HttpPost("")]
+        public async Task<IActionResult> Create(Assessment assessment)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-            if (assessment.Amount <= 0m) return BadRequest("Amount must be positive.");
-            if (await _db.Homeowners.FindAsync(assessment.HomeownerId) == null) return BadRequest("Unknown homeownerId.");
+            if (assessment.Amount <= 0m) return BadRequest(new { message = "Amount must be positive." });
+            if (await _db.Homeowners.FindAsync(assessment.HomeownerId) == null) return BadRequest(new { message = "Unknown homeownerId." });
 
             _db.Assessments.Add(assessment);
             await _db.SaveChangesAsync();
             return Created($"api/assessments/{assessment.Id}", assessment);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing) _db.Dispose();
-            base.Dispose(disposing);
         }
     }
 }

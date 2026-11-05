@@ -78,6 +78,7 @@ else
             associationCount = associations.Count;
             homeownerCount = owners.Count;
             homeowners = owners.ToDictionary(h => h.Id);
+            var graceDays = associations.ToDictionary(a => a.Id, a => a.GracePeriodDays);
 
             // N+1 detail calls: the per-assessment GET is the only endpoint that computes balance and late fee.
             var details = new List<AssessmentDetailDto>();
@@ -88,7 +89,12 @@ else
 
             outstanding = details.Sum(d => d.Balance);
             lateFees = details.Sum(d => d.LateFee);
-            pastDue = details.Where(d => d.LateFee > 0).OrderBy(d => d.DueDate).ToList();
+            pastDue = details
+                .Where(d => d.Balance > 0
+                    && homeowners.TryGetValue(d.HomeownerId, out var h)
+                    && DateTime.Today > d.DueDate.Date.AddDays(graceDays.GetValueOrDefault(h.AssociationId)))
+                .OrderBy(d => d.DueDate)
+                .ToList();
         }
         catch (Exception ex)
         {

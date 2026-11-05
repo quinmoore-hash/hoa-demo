@@ -11,6 +11,7 @@
                 <NavLink href="associations">Associations</NavLink>
                 <NavLink href="homeowners">Homeowners</NavLink>
                 <NavLink href="assessments">Assessments</NavLink>
+                <NavLink href="staff">Staff</NavLink>
             </nav>
 
             <details class="user-menu">
@@ -21,6 +22,7 @@
                 </summary>
                 <div class="menu">
                     <div class="email">Signed in as<br /><strong>@context.User.Identity?.Name</strong></div>
+                    <a href="Account/Manage">Account settings</a>
                     <form action="Account/Logout" method="post">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />

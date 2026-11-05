@@ -1,0 +1,106 @@
+@page "/staff"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using HoaDemo.Web.Data
+@inject UserManager<ApplicationUser> UserManager
+
+<PageTitle>Staff</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1>Staff</h1>
+        <p class="subtitle">Internal users who can sign in to this app</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">Staff logins</div>
+            <table class="table table-hover">
+                <thead><tr><th>Email</th><th>Locked out</th></tr></thead>
+                <tbody>
+                    @foreach (var u in staff)
+                    {
+                        <tr>
+                            <td>@u.Email</td>
+                            <td>@(u.LockoutEnd > DateTimeOffset.UtcNow ? "Yes" : "No")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">Add staff user</div>
+            <div class="card-body">
+                @if (message is not null)
+                {
+                    <div class="alert @(succeeded ? "alert-success" : "alert-danger")" role="alert">@message</div>
+                }
+                <EditForm Model="Input" FormName="add-staff" OnValidSubmit="AddAsync" method="post">
+                    <DataAnnotationsValidator />
+                    <div class="mb-2">
+                        <label class="form-label" for="staff-email">Email</label>
+                        <InputText id="staff-email" class="form-control" @bind-Value="Input.Email" autocomplete="off" />
+                        <ValidationMessage For="() => Input.Email" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="staff-password">Temporary password</label>
+                        <InputText id="staff-password" type="password" class="form-control" @bind-Value="Input.Password" autocomplete="new-password" />
+                        <ValidationMessage For="() => Input.Password" />
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-2">Add staff user</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ApplicationUser> staff = [];
+    private string? message;
+    private bool succeeded;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => staff = await UserManager.Users.OrderBy(u => u.Email).ToListAsync();
+
+    private async Task AddAsync()
+    {
+        if (await UserManager.FindByEmailAsync(Input.Email) is not null)
+        {
+            message = $"{Input.Email} already has a login.";
+            succeeded = false;
+            return;
+        }
+
+        var result = await UserManager.CreateAsync(
+            new ApplicationUser { UserName = Input.Email, Email = Input.Email, EmailConfirmed = true }, Input.Password);
+        succeeded = result.Succeeded;
+        message = succeeded
+            ? $"Added {Input.Email}. Share the temporary password with them securely; they can change it under Account settings."
+            : string.Join(" ", result.Errors.Select(e => e.Description));
+        if (succeeded)
+        {
+            Input = new();
+        }
+
+        await LoadAsync();
+    }
+
+    private sealed class InputModel
+    {
+        [Required, EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required, DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+    }
+}

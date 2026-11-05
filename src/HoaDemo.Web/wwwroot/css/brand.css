@@ -120,7 +120,9 @@ html, body {
     word-break: break-all;
 }
 
-.user-menu .menu button {
+.user-menu .menu button,
+.user-menu .menu a {
+    display: block;
     width: 100%;
     text-align: left;
     background: none;
@@ -130,7 +132,9 @@ html, body {
     color: var(--brand-navy);
 }
 
-.user-menu .menu button:hover { background: var(--brand-teal-100); }
+.user-menu .menu a { text-decoration: none; }
+.user-menu .menu button:hover,
+.user-menu .menu a:hover { background: var(--brand-teal-100); }
 
 /* Page shell */
 .page-content {

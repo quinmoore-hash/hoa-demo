@@ -40,7 +40,16 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+var smtp = builder.Configuration.GetSection("Smtp");
+if (!string.IsNullOrWhiteSpace(smtp["Host"]))
+{
+    builder.Services.Configure<SmtpOptions>(smtp);
+    builder.Services.AddSingleton<IEmailSender<ApplicationUser>, SmtpEmailSender>();
+}
+else
+{
+    builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+}
 
 builder.Services.AddHttpClient<HoaApiClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["HoaApi:BaseUrl"] ?? "http://localhost:5080"));
@@ -51,15 +60,29 @@ using (var scope = app.Services.CreateScope())
 {
     await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
 
-    // Dev-only demo staff login, read from appsettings.Development.json. Not a real credential.
-    var demo = app.Configuration.GetSection("DemoStaffUser");
-    if (app.Environment.IsDevelopment() && demo["Email"] is { Length: > 0 } email && demo["Password"] is { Length: > 0 } password)
+    // Bootstrap staff login from the "StaffUser" config section, in any environment. Development ships a demo
+    // account in appsettings.Development.json; elsewhere set StaffUser__Email / StaffUser__Password.
+    var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("StaffUser");
+    var staff = app.Configuration.GetSection("StaffUser");
+    if (staff["Email"] is { Length: > 0 } email && staff["Password"] is { Length: > 0 } password)
     {
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         if (await users.FindByEmailAsync(email) is null)
         {
-            await users.CreateAsync(new ApplicationUser { UserName = email, Email = email, EmailConfirmed = true }, password);
+            var result = await users.CreateAsync(new ApplicationUser { UserName = email, Email = email, EmailConfirmed = true }, password);
+            if (result.Succeeded)
+            {
+                logger.LogInformation("Created staff user {Email}.", email);
+            }
+            else
+            {
+                logger.LogError("Could not create staff user {Email}: {Errors}", email, string.Join(" ", result.Errors.Select(e => e.Description)));
+            }
         }
+    }
+    else if (!await users.Users.AnyAsync())
+    {
+        logger.LogWarning("No staff users exist. Set StaffUser:Email and StaffUser:Password to create the first login.");
     }
 }
 
@@ -95,3 +118,5 @@ components.MapRazorComponents<App>()
 app.MapAdditionalIdentityEndpoints();
 
 app.Run();
+
+public partial class Program { }

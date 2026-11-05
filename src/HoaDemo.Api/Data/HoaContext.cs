@@ -1,11 +1,15 @@
-using System.Data.Entity;
 using HoaDemo.Api.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace HoaDemo.Api.Data
 {
     public class HoaContext : DbContext
     {
-        public HoaContext() : base("name=HoaContext")
+        public HoaContext(DbContextOptions<HoaContext> options) : base(options)
+        {
+        }
+
+        protected HoaContext(DbContextOptions options) : base(options)
         {
         }
 
@@ -14,10 +18,10 @@ namespace HoaDemo.Api.Data
         public DbSet<Assessment> Assessments { get; set; }
         public DbSet<Payment> Payments { get; set; }
 
-        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {
-            modelBuilder.Properties<decimal>().Configure(p => p.HasPrecision(18, 2));
-            base.OnModelCreating(modelBuilder);
+            configurationBuilder.Properties<decimal>().HavePrecision(18, 2);
+            base.ConfigureConventions(configurationBuilder);
         }
     }
 }

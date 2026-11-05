@@ -21,3 +21,8 @@ project.lock.json
 *.mdf
 *.ldf
 App_Data/
+
+## EF Core (SQLite dev database)
+*.db
+*.db-shm
+*.db-wal

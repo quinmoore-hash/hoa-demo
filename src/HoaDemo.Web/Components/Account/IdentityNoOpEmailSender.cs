@@ -4,7 +4,7 @@ using HoaDemo.Web.Data;
 
 namespace HoaDemo.Web.Components.Account;
 
-// Remove the "else if (EmailSender is IdentityNoOpEmailSender)" block from RegisterConfirmation.razor after updating with a real implementation.
+// Registered only when no "Smtp:Host" is configured; account pages check for it and hide email-dependent flows.
 internal sealed class IdentityNoOpEmailSender : IEmailSender<ApplicationUser>
 {
     private readonly IEmailSender emailSender = new NoOpEmailSender();

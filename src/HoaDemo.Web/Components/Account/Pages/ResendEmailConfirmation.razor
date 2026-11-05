@@ -19,6 +19,13 @@
 <h2>Enter your email.</h2>
 <hr />
 <StatusMessage Message="@message" />
+@if (EmailSender is IdentityNoOpEmailSender)
+{
+    <div class="alert alert-warning" role="alert">
+        Email isn't set up for this site, so confirmation links can't be sent.
+    </div>
+    return;
+}
 <div class="row">
     <div class="col-md-4">
         <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post">
@@ -42,6 +49,11 @@
 
     private async Task OnValidSubmitAsync()
     {
+        if (EmailSender is IdentityNoOpEmailSender)
+        {
+            return;
+        }
+
         var user = await UserManager.FindByEmailAsync(Input.Email!);
         if (user is null)
         {

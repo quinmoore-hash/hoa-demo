@@ -16,6 +16,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\HoaDemo.Api\HoaDemo.Api.csproj" />
+    <!-- Aliased: the Web app's Program would otherwise clash with the API's Program. -->
+    <ProjectReference Include="..\..\src\HoaDemo.Web\HoaDemo.Web.csproj" Aliases="Web" />
   </ItemGroup>
 
 </Project>

@@ -36,6 +36,7 @@ src/HoaDemo.Web/
 tests/HoaDemo.Tests/
   LateFeeCalculator*Tests.cs      Unit tests for the late-fee policy
   Integration/                    WebApplicationFactory API tests
+  Web/                            WebApplicationFactory UI-host tests (staff login, email)
 ```
 
 ## Late-fee rules
@@ -83,10 +84,39 @@ dotnet test
 ```
 
 On first start the API applies its migrations and seeds one association, homeowner, and
-assessment. The UI applies the Identity migrations and, in the `Development` environment,
-creates the demo staff login from `src/HoaDemo.Web/appsettings.Development.json`
-(`DemoStaffUser`: `staff@hoa-demo.local` / `Staff123!`). Sign in with that account, or
-register a new one.
+assessment. The UI applies the Identity migrations and creates the staff login from the
+`StaffUser` config section; in `Development` that is the demo account in
+`src/HoaDemo.Web/appsettings.Development.json` (`staff@hoa-demo.local` / `Staff123!`).
+
+### Staff logins (non-Development)
+
+There is no self-registration. Set the first login with configuration or environment
+variables (never commit real credentials); it is created on startup if it doesn't exist:
+
+```bash
+StaffUser__Email=manager@example.com StaffUser__Password='<strong password>' \
+ASPNETCORE_ENVIRONMENT=Production dotnet run --project src/HoaDemo.Web
+```
+
+Signed-in staff can add more logins on the **Staff** page (`/staff`). The startup log warns
+when no staff user exists and `StaffUser` is not set.
+
+### Email (password reset / email change)
+
+Identity emails are sent over SMTP when `Smtp:Host` is set:
+
+| Key              | Default                   |
+| ---------------- | ------------------------- |
+| `Smtp:Host`      | _(unset = email disabled)_ |
+| `Smtp:Port`      | `25`                      |
+| `Smtp:EnableSsl` | `false`                   |
+| `Smtp:UserName` / `Smtp:Password` | _(none)_ |
+| `Smtp:From`      | `no-reply@hoa-demo.local` |
+
+Without `Smtp:Host` the forgot-password, resend-confirmation and change-email pages say
+email isn't set up instead of pretending to send. For local testing, run
+[Mailpit](https://mailpit.axllent.org/) (`docker run -p 1025:1025 -p 8025:8025 axllent/mailpit`)
+and start the UI with `Smtp__Host=localhost Smtp__Port=1025`.
 
 ### Database provider
 
@@ -111,6 +141,13 @@ dotnet ef migrations add <Name> --context HoaContext       --output-dir Data/Mig
 dotnet ef migrations add <Name> --context SqliteHoaContext --output-dir Data/Migrations/Sqlite
 ```
 
+### Upgrading a database created by the legacy EF6 app
+
+Point `ConnectionStrings:HoaContext` at the existing SQL Server database and start the API. If
+it finds the EF6 tables (`__MigrationHistory` + `Associations`) but no EF Core history, it
+records `InitialCreate` as already applied and then runs only the later migrations, so the
+existing data is kept. Back up the database first.
+
 The UI's Identity schema lives in `src/HoaDemo.Web/Data/Migrations` (`ApplicationDbContext`, SQLite).
 
 ## Branding
@@ -126,6 +163,7 @@ Ported from .NET Framework 4.8 / Web API 2 / EF6. Behavioural differences to be 
 * Navigation properties serialize as empty/`null` – EF Core has no lazy loading, so only
   explicitly included data is returned.
 * Error bodies keep the Web API 2 `{"message": "..."}` shape.
+* `LateFeePercent` is stored as `decimal(18,4)` (was `(18,2)`, which rounded 2.5% to 3%).
 * The API has no authentication (same as the legacy service); the UI requires an Identity sign-in.
 
 ## Known limitations
@@ -133,4 +171,4 @@ Ported from .NET Framework 4.8 / Web API 2 / EF6. Behavioural differences to be 
 * The API is unauthenticated and intended for internal/network-restricted use only.
 * The UI is Blazor Server with its own SQLite Identity store; there is no shared user directory.
 * Model changes require adding migrations for both the SQL Server and SQLite sets.
-* Demo credentials are checked into `appsettings.Development.json` and are only created in `Development`.
+* Demo credentials are checked into `appsettings.Development.json`; that file is only loaded in `Development`.

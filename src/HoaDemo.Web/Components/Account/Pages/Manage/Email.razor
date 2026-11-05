@@ -17,6 +17,14 @@
 <h3>Manage email</h3>
 
 <StatusMessage Message="@message"/>
+@if (EmailSender is IdentityNoOpEmailSender)
+{
+    <div class="alert alert-warning" role="alert">
+        Email isn't set up for this site, so your email address (@email) can't be verified or changed here.
+        Ask an administrator to update it.
+    </div>
+    return;
+}
 <div class="row">
     <div class="col-md-6">
         <form @onsubmit="OnSendEmailVerificationAsync" @formname="send-verification" id="send-verification-form" method="post">
@@ -76,6 +84,11 @@
 
     private async Task OnValidSubmitAsync()
     {
+        if (EmailSender is IdentityNoOpEmailSender)
+        {
+            return;
+        }
+
         if (Input.NewEmail is null || Input.NewEmail == email)
         {
             message = "Your email is unchanged.";
@@ -96,6 +109,11 @@
 
     private async Task OnSendEmailVerificationAsync()
     {
+        if (EmailSender is IdentityNoOpEmailSender)
+        {
+            return;
+        }
+
         if (email is null)
         {
             return;

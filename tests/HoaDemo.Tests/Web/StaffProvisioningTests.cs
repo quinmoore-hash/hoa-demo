@@ -34,6 +34,34 @@ namespace HoaDemo.Tests.Web
         }
 
         [Fact]
+        public async Task StaffUser_is_not_recreated_once_any_staff_user_exists()
+        {
+            using var factory = new HoaWebFactory("Production", new Dictionary<string, string>
+            {
+                ["StaffUser:Email"] = "bootstrap@example.com",
+                ["StaffUser:Password"] = "Bootstrap123!",
+            });
+            factory.CreateClient();
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                var user = (await users.FindByEmailAsync("bootstrap@example.com"))!;
+                await users.SetEmailAsync(user, "renamed@example.com");
+                await users.SetUserNameAsync(user, "renamed@example.com");
+            }
+
+            // Restart against the same database with the same StaffUser config.
+            using var restarted = factory.WithWebHostBuilder(_ => { });
+            restarted.CreateClient();
+
+            using var scope2 = restarted.Services.CreateScope();
+            var users2 = scope2.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            Assert.Null(await users2.FindByEmailAsync("bootstrap@example.com"));
+            Assert.Equal(1, users2.Users.Count());
+        }
+
+        [Fact]
         public void Production_without_staff_config_starts_with_no_users()
         {
             using var factory = new HoaWebFactory("Production");

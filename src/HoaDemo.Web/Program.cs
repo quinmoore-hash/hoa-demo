@@ -60,14 +60,15 @@ using (var scope = app.Services.CreateScope())
 {
     await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
 
-    // Bootstrap staff login from the "StaffUser" config section, in any environment. Development ships a demo
-    // account in appsettings.Development.json; elsewhere set StaffUser__Email / StaffUser__Password.
+    // Bootstrap the first staff login from the "StaffUser" config section, in any environment, only while the
+    // store has no users (so a renamed or removed bootstrap account is never recreated). Development ships a
+    // demo account in appsettings.Development.json; elsewhere set StaffUser__Email / StaffUser__Password.
     var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("StaffUser");
     var staff = app.Configuration.GetSection("StaffUser");
-    if (staff["Email"] is { Length: > 0 } email && staff["Password"] is { Length: > 0 } password)
+    if (!await users.Users.AnyAsync())
     {
-        if (await users.FindByEmailAsync(email) is null)
+        if (staff["Email"] is { Length: > 0 } email && staff["Password"] is { Length: > 0 } password)
         {
             var result = await users.CreateAsync(new ApplicationUser { UserName = email, Email = email, EmailConfirmed = true }, password);
             if (result.Succeeded)
@@ -79,10 +80,10 @@ using (var scope = app.Services.CreateScope())
                 logger.LogError("Could not create staff user {Email}: {Errors}", email, string.Join(" ", result.Errors.Select(e => e.Description)));
             }
         }
-    }
-    else if (!await users.Users.AnyAsync())
-    {
-        logger.LogWarning("No staff users exist. Set StaffUser:Email and StaffUser:Password to create the first login.");
+        else
+        {
+            logger.LogWarning("No staff users exist. Set StaffUser:Email and StaffUser:Password to create the first login.");
+        }
     }
 }
 

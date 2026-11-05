@@ -23,5 +23,12 @@ namespace HoaDemo.Api.Data
             configurationBuilder.Properties<decimal>().HavePrecision(18, 2);
             base.ConfigureConventions(configurationBuilder);
         }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // A fraction (0.025 = 2.5%), so it needs more than the money default of 2 decimal places.
+            modelBuilder.Entity<Association>().Property(a => a.LateFeePercent).HasPrecision(18, 4);
+            base.OnModelCreating(modelBuilder);
+        }
     }
 }

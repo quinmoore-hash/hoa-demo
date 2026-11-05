@@ -67,7 +67,7 @@ namespace HoaDemo.Api.Data.Migrations.Sqlite
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("LateFeePercent")
-                        .HasPrecision(18, 2)
+                        .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")

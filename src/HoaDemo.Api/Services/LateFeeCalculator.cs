@@ -12,8 +12,14 @@ namespace HoaDemo.Api.Services
     ///   * Otherwise: flat fee + percent of the still-unpaid balance, rounded to cents,
     ///     capped at LateFeeMax (when LateFeeMax &gt; 0).
     /// </summary>
-    public static class LateFeeCalculator
+    public sealed class LateFeeCalculator : ILateFeeCalculator
     {
+        decimal ILateFeeCalculator.OutstandingBalance(Assessment assessment, DateTime asOf) =>
+            OutstandingBalance(assessment, asOf);
+
+        decimal ILateFeeCalculator.CalculateLateFee(Assessment assessment, Association policy, DateTime asOf) =>
+            CalculateLateFee(assessment, policy, asOf);
+
         public static decimal OutstandingBalance(Assessment assessment, DateTime asOf)
         {
             var paid = (assessment.Payments ?? Enumerable.Empty<Payment>())

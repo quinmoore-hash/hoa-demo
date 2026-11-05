@@ -1,0 +1,275 @@
+/* HOA Manager brand theme: approximates the Vantaca palette. Loaded after Bootstrap. */
+:root {
+    --brand-navy: #0B2341;
+    --brand-navy-700: #163761;
+    --brand-teal: #00A9B5;
+    --brand-teal-600: #008F99;
+    --brand-teal-100: #E0F6F7;
+    --brand-bg: #F4F6F8;
+    --brand-card: #FFFFFF;
+    --brand-border: #E1E6EC;
+    --brand-text: #1F2A37;
+    --brand-muted: #6B7A8C;
+    --brand-danger: #C0392B;
+    --brand-shadow: 0 1px 2px rgba(11, 35, 65, 0.06), 0 4px 12px rgba(11, 35, 65, 0.06);
+    --bs-body-bg: var(--brand-bg);
+    --bs-body-color: var(--brand-text);
+    --bs-link-color: var(--brand-teal-600);
+    --bs-link-hover-color: var(--brand-navy);
+}
+
+html, body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: var(--brand-bg);
+    color: var(--brand-text);
+}
+
+/* Top nav */
+.topnav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    z-index: 1030;
+    background: var(--brand-navy);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    gap: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.topnav .brand img {
+    height: 32px;
+    display: block;
+}
+
+.topnav .nav-links {
+    display: flex;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.topnav .nav-links a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.topnav .nav-links a:hover {
+    color: #fff;
+    background: var(--brand-navy-700);
+}
+
+.topnav .nav-links a.active {
+    color: #fff;
+    box-shadow: inset 0 -3px 0 var(--brand-teal);
+}
+
+.user-menu {
+    position: relative;
+}
+
+.user-menu summary {
+    list-style: none;
+    cursor: pointer;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+}
+
+.user-menu summary::-webkit-details-marker { display: none; }
+.user-menu summary:hover { background: var(--brand-navy-700); }
+
+.user-menu .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--brand-teal);
+    color: var(--brand-navy);
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-menu .menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    min-width: 220px;
+    background: var(--brand-card);
+    color: var(--brand-text);
+    border: 1px solid var(--brand-border);
+    border-radius: 8px;
+    box-shadow: var(--brand-shadow);
+    padding: 0.5rem;
+}
+
+.user-menu .menu .email {
+    font-size: 0.85rem;
+    color: var(--brand-muted);
+    padding: 0.4rem 0.6rem;
+    word-break: break-all;
+}
+
+.user-menu .menu button,
+.user-menu .menu a {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    padding: 0.5rem 0.6rem;
+    border-radius: 6px;
+    color: var(--brand-navy);
+}
+
+.user-menu .menu a { text-decoration: none; }
+.user-menu .menu button:hover,
+.user-menu .menu a:hover { background: var(--brand-teal-100); }
+
+/* Page shell */
+.page-content {
+    padding: calc(60px + 1.5rem) 1.5rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.page-header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--brand-navy);
+    margin: 0;
+}
+
+.page-header .subtitle {
+    color: var(--brand-muted);
+    margin: 0.15rem 0 0;
+}
+
+/* Cards */
+.card {
+    background: var(--brand-card);
+    border: 1px solid var(--brand-border);
+    border-radius: 10px;
+    box-shadow: var(--brand-shadow);
+}
+
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--brand-border);
+    font-weight: 600;
+    color: var(--brand-navy);
+    padding: 0.85rem 1.25rem;
+}
+
+.stat-card .label {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+    color: var(--brand-muted);
+}
+
+.stat-card .value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--brand-navy);
+    line-height: 1.2;
+}
+
+.stat-card.accent { border-top: 3px solid var(--brand-teal); }
+.stat-card.warn { border-top: 3px solid var(--brand-danger); }
+.stat-card.warn .value { color: var(--brand-danger); }
+
+dl.facts { margin: 0; }
+dl.facts dt { color: var(--brand-muted); font-weight: 500; font-size: 0.85rem; }
+dl.facts dd { margin-bottom: 0.75rem; color: var(--brand-text); }
+
+/* Tables */
+.table {
+    --bs-table-color: var(--brand-text);
+    --bs-table-border-color: var(--brand-border);
+    --bs-table-striped-bg: #FAFBFC;
+    --bs-table-hover-bg: var(--brand-teal-100);
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background: #F7F9FB;
+    color: var(--brand-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    border-bottom: 1px solid var(--brand-border);
+}
+
+.table td.money, .table th.money { text-align: right; font-variant-numeric: tabular-nums; }
+.text-late { color: var(--brand-danger); font-weight: 600; }
+
+/* Buttons (the bundled Bootstrap 5.1 uses literal colors, so override the properties directly) */
+.btn-primary {
+    color: #fff;
+    background-color: var(--brand-teal);
+    border-color: var(--brand-teal);
+    font-weight: 600;
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary:disabled {
+    color: #fff;
+    background-color: var(--brand-teal-600);
+    border-color: var(--brand-teal-600);
+}
+
+.btn-primary:focus { box-shadow: 0 0 0 0.25rem rgba(0, 169, 181, 0.35); }
+
+.btn-outline-primary {
+    color: var(--brand-navy);
+    border-color: var(--brand-navy);
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active {
+    color: #fff;
+    background-color: var(--brand-navy);
+    border-color: var(--brand-navy);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--brand-teal);
+    box-shadow: 0 0 0 0.2rem rgba(0, 169, 181, 0.25);
+}
+
+.badge-teal {
+    background: var(--brand-teal-100);
+    color: var(--brand-teal-600);
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+/* Login */
+.login-shell {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card { width: 100%; max-width: 420px; padding: 2rem; }
+.login-card h1 { font-size: 1.4rem; color: var(--brand-navy); font-weight: 600; }

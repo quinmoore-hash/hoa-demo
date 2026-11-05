@@ -7,24 +7,23 @@ on:
 
 jobs:
   build-and-test:
-    # .NET Framework 4.8 can only be built and executed on Windows.
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET SDK (build tooling only; targets net48)
+      - name: Setup .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
       - name: Restore
-        run: dotnet restore HoaDemo.sln
+        run: dotnet restore
 
       - name: Build
-        run: dotnet build HoaDemo.sln --configuration Release --no-restore
+        run: dotnet build -c Release --no-restore
 
       - name: Test
-        run: dotnet test HoaDemo.sln --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test -c Release --no-build --logger "trx;LogFileName=test-results.trx"
 
       - name: Upload test results
         if: always()

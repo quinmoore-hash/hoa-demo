@@ -1,0 +1,76 @@
+@page "/assessments"
+@rendermode InteractiveServer
+@inject HoaApiClient Api
+
+<PageTitle>Assessments</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1>Assessments</h1>
+        <p class="subtitle">All assessments across associations, with balances as of today</p>
+    </div>
+</div>
+
+<ApiError Message="@error" />
+
+<div class="card">
+    <div class="card-header">All assessments</div>
+    @if (rows is null)
+    {
+        <div class="card-body text-muted">Loading…</div>
+    }
+    else if (rows.Count == 0)
+    {
+        <div class="card-body text-muted">No assessments yet.</div>
+    }
+    else
+    {
+        <table class="table table-hover">
+            <thead>
+                <tr><th>Association</th><th>Homeowner</th><th>Description</th><th>Due date</th><th class="money">Amount</th><th class="money">Balance</th><th class="money">Late fee</th><th class="money">Total due</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var r in rows)
+                {
+                    <tr>
+                        <td>@r.Association</td>
+                        <td><a href="homeowners/@r.Detail.HomeownerId">@r.Homeowner</a></td>
+                        <td>@r.Detail.Description</td>
+                        <td>@Fmt.Date(r.Detail.DueDate)</td>
+                        <td class="money">@Fmt.Money(r.Detail.Amount)</td>
+                        <td class="money">@Fmt.Money(r.Detail.Balance)</td>
+                        <td class="money @(r.Detail.LateFee > 0 ? "text-late" : "")">@Fmt.Money(r.Detail.LateFee)</td>
+                        <td class="money"><strong>@Fmt.Money(r.Detail.TotalDue)</strong></td>
+                        <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="assessments/@r.Detail.Id">View</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private List<Row>? rows;
+    private string? error;
+
+    private sealed record Row(string Association, string Homeowner, AssessmentDetailDto Detail);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var associations = (await Api.GetAssociationsAsync()).ToDictionary(a => a.Id);
+            var homeowners = (await Api.GetHomeownersAsync()).ToDictionary(h => h.Id);
+            var list = new List<Row>();
+            foreach (var a in await Api.GetAssessmentsAsync())
+            {
+                if (await Api.GetAssessmentAsync(a.Id) is not { } d) continue;
+                homeowners.TryGetValue(d.HomeownerId, out var h);
+                var assoc = h is not null && associations.TryGetValue(h.AssociationId, out var x) ? x.Name : "—";
+                list.Add(new Row(assoc, h?.FullName ?? $"Homeowner #{d.HomeownerId}", d));
+            }
+            rows = list.OrderBy(r => r.Detail.DueDate).ToList();
+        }
+        catch (Exception ex) { error = ex.Message; }
+    }
+}

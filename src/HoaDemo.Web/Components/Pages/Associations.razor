@@ -1,0 +1,132 @@
+@page "/associations"
+@rendermode InteractiveServer
+@inject HoaApiClient Api
+@inject NavigationManager Nav
+
+<PageTitle>Associations</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1>Associations</h1>
+        <p class="subtitle">Communities under management and their late-fee policies</p>
+    </div>
+</div>
+
+<ApiError Message="@error" />
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">All associations</div>
+            @if (associations is null)
+            {
+                <div class="card-body text-muted">Loading…</div>
+            }
+            else if (associations.Count == 0)
+            {
+                <div class="card-body text-muted">No associations yet.</div>
+            }
+            else
+            {
+                <table class="table table-hover">
+                    <thead>
+                        <tr><th>Name</th><th>Address</th><th>Grace</th><th class="money">Flat fee</th><th class="money">Percent</th><th class="money">Cap</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in associations)
+                        {
+                            <tr>
+                                <td><a href="associations/@a.Id">@a.Name</a></td>
+                                <td>@a.Address</td>
+                                <td>@a.GracePeriodDays days</td>
+                                <td class="money">@Fmt.Money(a.LateFeeFlatAmount)</td>
+                                <td class="money">@Fmt.Percent(a.LateFeePercent)</td>
+                                <td class="money">@(a.LateFeeMax == 0 ? "No cap" : Fmt.Money(a.LateFeeMax))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">New association</div>
+            <div class="card-body">
+                <EditForm Model="form" OnValidSubmit="CreateAsync">
+                    <DataAnnotationsValidator />
+                    <div class="mb-2">
+                        <label class="form-label" for="name">Name</label>
+                        <InputText id="name" class="form-control" @bind-Value="form.Name" />
+                        <ValidationMessage For="() => form.Name" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="address">Address</label>
+                        <InputText id="address" class="form-control" @bind-Value="form.Address" />
+                    </div>
+                    <hr />
+                    <div class="small text-muted mb-2">Late-fee policy</div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label" for="grace">Grace period (days)</label>
+                            <InputNumber id="grace" class="form-control" @bind-Value="form.GracePeriodDays" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="flat">Flat amount ($)</label>
+                            <InputNumber id="flat" class="form-control" @bind-Value="form.LateFeeFlatAmount" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="pct">Percent of balance (%)</label>
+                            <InputNumber id="pct" class="form-control" @bind-Value="form.LateFeePercentDisplay" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="max">Maximum ($, 0 = no cap)</label>
+                            <InputNumber id="max" class="form-control" @bind-Value="form.LateFeeMax" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3" disabled="@saving">Create association</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<AssociationDto>? associations;
+    private string? error;
+    private bool saving;
+    private readonly AssociationForm form = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try { associations = await Api.GetAssociationsAsync(); }
+        catch (Exception ex) { error = ex.Message; }
+    }
+
+    private async Task CreateAsync()
+    {
+        saving = true;
+        error = null;
+        try
+        {
+            var created = await Api.CreateAssociationAsync(new AssociationDto(0, form.Name, form.Address,
+                form.GracePeriodDays, form.LateFeeFlatAmount, form.LateFeePercentDisplay / 100m, form.LateFeeMax));
+            Nav.NavigateTo($"associations/{created.Id}");
+        }
+        catch (Exception ex) { error = ex.Message; }
+        saving = false;
+    }
+
+    private sealed class AssociationForm
+    {
+        [System.ComponentModel.DataAnnotations.Required] public string Name { get; set; } = "";
+        public string? Address { get; set; }
+        public int GracePeriodDays { get; set; } = 15;
+        public decimal LateFeeFlatAmount { get; set; } = 25m;
+        public decimal LateFeePercentDisplay { get; set; } = 5m;   // entered as %, sent as a fraction
+        public decimal LateFeeMax { get; set; } = 100m;
+    }
+}

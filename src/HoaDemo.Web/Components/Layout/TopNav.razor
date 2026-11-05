@@ -1,0 +1,56 @@
+@implements IDisposable
+@inject NavigationManager NavigationManager
+
+<header class="topnav">
+    <a class="brand" href="/"><img src="img/logo.svg" alt="HOA Manager" /></a>
+
+    <AuthorizeView>
+        <Authorized>
+            <nav class="nav-links">
+                <NavLink href="" Match="NavLinkMatch.All">Dashboard</NavLink>
+                <NavLink href="associations">Associations</NavLink>
+                <NavLink href="homeowners">Homeowners</NavLink>
+                <NavLink href="assessments">Assessments</NavLink>
+            </nav>
+
+            <details class="user-menu">
+                <summary>
+                    <span class="avatar">@Initial(context.User.Identity?.Name)</span>
+                    <span>@context.User.Identity?.Name</span>
+                    <span aria-hidden="true">&#9662;</span>
+                </summary>
+                <div class="menu">
+                    <div class="email">Signed in as<br /><strong>@context.User.Identity?.Name</strong></div>
+                    <form action="Account/Logout" method="post">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                        <button type="submit">Log out</button>
+                    </form>
+                </div>
+            </details>
+        </Authorized>
+    </AuthorizeView>
+</header>
+
+@code {
+    private string? currentUrl;
+
+    protected override void OnInitialized()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    private static string Initial(string? name) => string.IsNullOrEmpty(name) ? "?" : name[..1].ToUpperInvariant();
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

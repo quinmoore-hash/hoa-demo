@@ -1,0 +1,101 @@
+@page "/"
+@rendermode InteractiveServer
+@inject HoaApiClient Api
+
+<PageTitle>Dashboard</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1>Dashboard</h1>
+        <p class="subtitle">Portfolio overview as of @Fmt.Date(DateTime.Today)</p>
+    </div>
+</div>
+
+<ApiError Message="@error" />
+
+@if (loading)
+{
+    <p class="text-muted">Loading…</p>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card stat-card accent p-3"><div class="label">Associations</div><div class="value">@associationCount</div></div></div>
+        <div class="col-md-3"><div class="card stat-card accent p-3"><div class="label">Homeowners</div><div class="value">@homeownerCount</div></div></div>
+        <div class="col-md-3"><div class="card stat-card accent p-3"><div class="label">Outstanding balance</div><div class="value">@Fmt.Money(outstanding)</div></div></div>
+        <div class="col-md-3"><div class="card stat-card warn p-3"><div class="label">Late fees accrued</div><div class="value">@Fmt.Money(lateFees)</div></div></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Past due assessments</div>
+        @if (pastDue.Count == 0)
+        {
+            <div class="card-body text-muted">No assessments are past their grace period.</div>
+        }
+        else
+        {
+            <table class="table table-hover">
+                <thead>
+                    <tr><th>Homeowner</th><th>Description</th><th>Due date</th><th class="money">Balance</th><th class="money">Late fee</th><th class="money">Total due</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in pastDue)
+                    {
+                        <tr>
+                            <td><a href="homeowners/@a.HomeownerId">@HomeownerName(a.HomeownerId)</a></td>
+                            <td>@a.Description</td>
+                            <td>@Fmt.Date(a.DueDate)</td>
+                            <td class="money">@Fmt.Money(a.Balance)</td>
+                            <td class="money text-late">@Fmt.Money(a.LateFee)</td>
+                            <td class="money">@Fmt.Money(a.TotalDue)</td>
+                            <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="assessments/@a.Id">View</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+}
+
+@code {
+    private bool loading = true;
+    private string? error;
+    private int associationCount;
+    private int homeownerCount;
+    private decimal outstanding;
+    private decimal lateFees;
+    private List<AssessmentDetailDto> pastDue = [];
+    private Dictionary<int, HomeownerDto> homeowners = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var associations = await Api.GetAssociationsAsync();
+            var owners = await Api.GetHomeownersAsync();
+            var assessments = await Api.GetAssessmentsAsync();
+
+            associationCount = associations.Count;
+            homeownerCount = owners.Count;
+            homeowners = owners.ToDictionary(h => h.Id);
+
+            // N+1 detail calls: the per-assessment GET is the only endpoint that computes balance and late fee.
+            var details = new List<AssessmentDetailDto>();
+            foreach (var a in assessments)
+            {
+                if (await Api.GetAssessmentAsync(a.Id) is { } d) details.Add(d);
+            }
+
+            outstanding = details.Sum(d => d.Balance);
+            lateFees = details.Sum(d => d.LateFee);
+            pastDue = details.Where(d => d.LateFee > 0).OrderBy(d => d.DueDate).ToList();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        loading = false;
+    }
+
+    private string HomeownerName(int id) => homeowners.TryGetValue(id, out var h) ? h.FullName : $"Homeowner #{id}";
+}

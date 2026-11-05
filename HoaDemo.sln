@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -6,6 +6,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HoaDemo.Api", "src\HoaDemo.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HoaDemo.Tests", "tests\HoaDemo.Tests\HoaDemo.Tests.csproj", "{7F1D2E3A-4B5C-4D6E-8F90-A1B2C3D4E5F6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B18A0018-EDDC-4289-BBB8-B161FAE4A25F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HoaDemo.Web", "src\HoaDemo.Web\HoaDemo.Web.csproj", "{8D491330-2D50-4EFE-9DF5-2DB8D1EC5361}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,8 +24,15 @@ Global
 		{7F1D2E3A-4B5C-4D6E-8F90-A1B2C3D4E5F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F1D2E3A-4B5C-4D6E-8F90-A1B2C3D4E5F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F1D2E3A-4B5C-4D6E-8F90-A1B2C3D4E5F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D491330-2D50-4EFE-9DF5-2DB8D1EC5361}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D491330-2D50-4EFE-9DF5-2DB8D1EC5361}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D491330-2D50-4EFE-9DF5-2DB8D1EC5361}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D491330-2D50-4EFE-9DF5-2DB8D1EC5361}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8D491330-2D50-4EFE-9DF5-2DB8D1EC5361} = {B18A0018-EDDC-4289-BBB8-B161FAE4A25F}
 	EndGlobalSection
 EndGlobal

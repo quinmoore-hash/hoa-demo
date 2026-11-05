@@ -1,0 +1,156 @@
+@page "/homeowners/{Id:int}"
+@rendermode InteractiveServer
+@inject HoaApiClient Api
+@inject NavigationManager Nav
+
+<PageTitle>@(homeowner?.FullName ?? "Homeowner")</PageTitle>
+
+<ApiError Message="@error" />
+
+@if (homeowner is null)
+{
+    <p class="text-muted">@(loaded ? "Homeowner not found." : "Loading…")</p>
+}
+else
+{
+    <div class="page-header">
+        <div>
+            <h1>@homeowner.FullName</h1>
+            <p class="subtitle">@homeowner.PropertyAddress @(association is null ? "" : $"· {association.Name}")</p>
+        </div>
+        @if (association is not null)
+        {
+            <a class="btn btn-outline-primary btn-sm" href="associations/@association.Id">Back to @association.Name</a>
+        }
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">Homeowner</div>
+                <div class="card-body">
+                    <dl class="facts">
+                        <dt>Email</dt><dd>@(homeowner.Email ?? "—")</dd>
+                        <dt>Property address</dt><dd>@homeowner.PropertyAddress</dd>
+                        <dt>Association</dt><dd>@if (association is not null) { <a href="associations/@association.Id">@association.Name</a> }</dd>
+                        <dt>Total due</dt><dd class="text-late">@Fmt.Money(assessments.Sum(a => a.TotalDue))</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Add assessment</div>
+                <div class="card-body">
+                    <EditForm Model="form" OnValidSubmit="AddAssessmentAsync">
+                        <DataAnnotationsValidator />
+                        <div class="mb-2">
+                            <label class="form-label" for="desc">Description</label>
+                            <InputText id="desc" class="form-control" @bind-Value="form.Description" />
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label" for="amount">Amount ($)</label>
+                                <InputNumber id="amount" class="form-control" @bind-Value="form.Amount" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="due">Due date</label>
+                                <InputDate id="due" class="form-control" @bind-Value="form.DueDate" />
+                            </div>
+                        </div>
+                        <ValidationSummary class="text-danger small mt-2" />
+                        <button type="submit" class="btn btn-primary mt-3" disabled="@saving">Add assessment</button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">Assessments <span class="badge-teal ms-2">@assessments.Count</span></div>
+                @if (assessments.Count == 0)
+                {
+                    <div class="card-body text-muted">No assessments yet.</div>
+                }
+                else
+                {
+                    <table class="table table-hover">
+                        <thead>
+                            <tr><th>Description</th><th class="money">Amount</th><th>Due date</th><th class="money">Balance</th><th class="money">Late fee</th><th class="money">Total due</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in assessments)
+                            {
+                                <tr>
+                                    <td><a href="assessments/@a.Id">@a.Description</a></td>
+                                    <td class="money">@Fmt.Money(a.Amount)</td>
+                                    <td>@Fmt.Date(a.DueDate)</td>
+                                    <td class="money">@Fmt.Money(a.Balance)</td>
+                                    <td class="money @(a.LateFee > 0 ? "text-late" : "")">@Fmt.Money(a.LateFee)</td>
+                                    <td class="money"><strong>@Fmt.Money(a.TotalDue)</strong></td>
+                                    <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="assessments/@a.Id">View</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private HomeownerDto? homeowner;
+    private AssociationDto? association;
+    private List<AssessmentDetailDto> assessments = [];
+    private bool loaded;
+    private bool saving;
+    private string? error;
+    private readonly AssessmentForm form = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            homeowner = await Api.GetHomeownerAsync(Id);
+            if (homeowner is not null)
+            {
+                association = await Api.GetAssociationAsync(homeowner.AssociationId);
+                await LoadAssessmentsAsync();
+            }
+        }
+        catch (Exception ex) { error = ex.Message; }
+        loaded = true;
+    }
+
+    private async Task LoadAssessmentsAsync()
+    {
+        var list = new List<AssessmentDetailDto>();
+        foreach (var a in await Api.GetAssessmentsAsync(Id))
+        {
+            if (await Api.GetAssessmentAsync(a.Id) is { } d) list.Add(d);
+        }
+        assessments = list;
+    }
+
+    private async Task AddAssessmentAsync()
+    {
+        saving = true;
+        error = null;
+        try
+        {
+            var created = await Api.CreateAssessmentAsync(new AssessmentDto(0, Id, form.Description, form.Amount, form.DueDate));
+            Nav.NavigateTo($"assessments/{created.Id}");
+        }
+        catch (Exception ex) { error = ex.Message; }
+        saving = false;
+    }
+
+    private sealed class AssessmentForm
+    {
+        [System.ComponentModel.DataAnnotations.Required] public string Description { get; set; } = "";
+        public decimal Amount { get; set; } = 300m;
+        public DateTime DueDate { get; set; } = DateTime.Today;
+    }
+}

@@ -1,0 +1,139 @@
+@page "/associations/{Id:int}"
+@rendermode InteractiveServer
+@inject HoaApiClient Api
+@inject NavigationManager Nav
+
+<PageTitle>@(association?.Name ?? "Association")</PageTitle>
+
+<ApiError Message="@error" />
+
+@if (association is null)
+{
+    <p class="text-muted">@(loaded ? "Association not found." : "Loading…")</p>
+}
+else
+{
+    <div class="page-header">
+        <div>
+            <h1>@association.Name</h1>
+            <p class="subtitle">@association.Address</p>
+        </div>
+        <a class="btn btn-outline-primary btn-sm" href="associations">All associations</a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">Late-fee policy</div>
+                <div class="card-body">
+                    <dl class="facts">
+                        <dt>Grace period</dt><dd>@association.GracePeriodDays days after due date</dd>
+                        <dt>Flat late fee</dt><dd>@Fmt.Money(association.LateFeeFlatAmount)</dd>
+                        <dt>Percent of unpaid balance</dt><dd>@Fmt.Percent(association.LateFeePercent)</dd>
+                        <dt>Maximum late fee</dt><dd>@(association.LateFeeMax == 0 ? "No cap" : Fmt.Money(association.LateFeeMax))</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Add homeowner</div>
+                <div class="card-body">
+                    <EditForm Model="form" OnValidSubmit="AddHomeownerAsync">
+                        <DataAnnotationsValidator />
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label" for="first">First name</label>
+                                <InputText id="first" class="form-control" @bind-Value="form.FirstName" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="last">Last name</label>
+                                <InputText id="last" class="form-control" @bind-Value="form.LastName" />
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label" for="email">Email</label>
+                            <InputText id="email" class="form-control" @bind-Value="form.Email" />
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label" for="prop">Property address</label>
+                            <InputText id="prop" class="form-control" @bind-Value="form.PropertyAddress" />
+                        </div>
+                        <ValidationSummary class="text-danger small mt-2" />
+                        <button type="submit" class="btn btn-primary mt-3" disabled="@saving">Add homeowner</button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">Homeowners <span class="badge-teal ms-2">@homeowners.Count</span></div>
+                @if (homeowners.Count == 0)
+                {
+                    <div class="card-body text-muted">No homeowners yet.</div>
+                }
+                else
+                {
+                    <table class="table table-hover">
+                        <thead><tr><th>Name</th><th>Property</th><th>Email</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var h in homeowners)
+                            {
+                                <tr>
+                                    <td><a href="homeowners/@h.Id">@h.FullName</a></td>
+                                    <td>@h.PropertyAddress</td>
+                                    <td>@h.Email</td>
+                                    <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="homeowners/@h.Id">View</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private AssociationDto? association;
+    private List<HomeownerDto> homeowners = [];
+    private bool loaded;
+    private bool saving;
+    private string? error;
+    private readonly HomeownerForm form = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            association = await Api.GetAssociationAsync(Id);
+            if (association is not null) homeowners = await Api.GetHomeownersAsync(Id);
+        }
+        catch (Exception ex) { error = ex.Message; }
+        loaded = true;
+    }
+
+    private async Task AddHomeownerAsync()
+    {
+        saving = true;
+        error = null;
+        try
+        {
+            var created = await Api.CreateHomeownerAsync(new HomeownerDto(0, Id, form.FirstName, form.LastName,
+                string.IsNullOrWhiteSpace(form.Email) ? null : form.Email, form.PropertyAddress));
+            Nav.NavigateTo($"homeowners/{created.Id}");
+        }
+        catch (Exception ex) { error = ex.Message; }
+        saving = false;
+    }
+
+    private sealed class HomeownerForm
+    {
+        [System.ComponentModel.DataAnnotations.Required] public string FirstName { get; set; } = "";
+        [System.ComponentModel.DataAnnotations.Required] public string LastName { get; set; } = "";
+        [System.ComponentModel.DataAnnotations.EmailAddress] public string? Email { get; set; }
+        [System.ComponentModel.DataAnnotations.Required] public string PropertyAddress { get; set; } = "";
+    }
+}

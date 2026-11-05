@@ -1,0 +1,150 @@
+@page "/assessments/{Id:int}"
+@rendermode InteractiveServer
+@inject HoaApiClient Api
+
+<PageTitle>Assessment</PageTitle>
+
+<ApiError Message="@error" />
+
+@if (assessment is null)
+{
+    <p class="text-muted">@(loaded ? "Assessment not found." : "Loading…")</p>
+}
+else
+{
+    <div class="page-header">
+        <div>
+            <h1>@assessment.Description</h1>
+            <p class="subtitle">
+                @if (homeowner is not null) { <a href="homeowners/@homeowner.Id">@homeowner.FullName</a> <span>· </span> }
+                Due @Fmt.Date(assessment.DueDate) · Assessed @Fmt.Money(assessment.Amount)
+            </p>
+        </div>
+        @if (homeowner is not null)
+        {
+            <a class="btn btn-outline-primary btn-sm" href="homeowners/@homeowner.Id">Back to homeowner</a>
+        }
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="card stat-card accent p-3"><div class="label">Balance</div><div class="value">@Fmt.Money(assessment.Balance)</div></div></div>
+        <div class="col-md-4"><div class="card stat-card @(assessment.LateFee > 0 ? "warn" : "accent") p-3"><div class="label">Late fee</div><div class="value">@Fmt.Money(assessment.LateFee)</div></div></div>
+        <div class="col-md-4"><div class="card stat-card accent p-3"><div class="label">Total due</div><div class="value">@Fmt.Money(assessment.TotalDue)</div></div></div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header">Payments <span class="badge-teal ms-2">@assessment.Payments.Count</span></div>
+                @if (assessment.Payments.Count == 0)
+                {
+                    <div class="card-body text-muted">No payments recorded.</div>
+                }
+                else
+                {
+                    <table class="table table-hover">
+                        <thead><tr><th>Paid on</th><th class="money">Amount</th><th>Method</th><th>Reference #</th></tr></thead>
+                        <tbody>
+                            @foreach (var p in assessment.Payments.OrderByDescending(p => p.PaidOn))
+                            {
+                                <tr>
+                                    <td>@Fmt.Date(p.PaidOn)</td>
+                                    <td class="money">@Fmt.Money(p.Amount)</td>
+                                    <td>@p.Method</td>
+                                    <td>@p.ReferenceNumber</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header">Record payment</div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(success))
+                    {
+                        <div class="alert alert-success py-2">@success</div>
+                    }
+                    <EditForm Model="form" OnValidSubmit="RecordPaymentAsync">
+                        <DataAnnotationsValidator />
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label" for="amount">Amount ($)</label>
+                                <InputNumber id="amount" class="form-control" @bind-Value="form.Amount" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="paidOn">Paid on <span class="text-muted">(blank = today)</span></label>
+                                <InputDate id="paidOn" class="form-control" @bind-Value="form.PaidOn" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="method">Method</label>
+                                <InputSelect id="method" class="form-select" @bind-Value="form.Method">
+                                    <option>Check</option>
+                                    <option>ACH</option>
+                                    <option>Card</option>
+                                </InputSelect>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="ref">Reference #</label>
+                                <InputText id="ref" class="form-control" @bind-Value="form.ReferenceNumber" />
+                            </div>
+                        </div>
+                        <ValidationSummary class="text-danger small mt-2" />
+                        <button type="submit" class="btn btn-primary mt-3" disabled="@saving">Record payment</button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private AssessmentDetailDto? assessment;
+    private HomeownerDto? homeowner;
+    private bool loaded;
+    private bool saving;
+    private string? error;
+    private string? success;
+    private PaymentForm form = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            assessment = await Api.GetAssessmentAsync(Id);
+            if (assessment is not null) homeowner = await Api.GetHomeownerAsync(assessment.HomeownerId);
+        }
+        catch (Exception ex) { error = ex.Message; }
+        loaded = true;
+    }
+
+    private async Task RecordPaymentAsync()
+    {
+        saving = true;
+        error = null;
+        success = null;
+        try
+        {
+            var payment = await Api.CreatePaymentAsync(new NewPayment(Id, form.Amount, form.PaidOn, form.Method,
+                string.IsNullOrWhiteSpace(form.ReferenceNumber) ? null : form.ReferenceNumber));
+            assessment = await Api.GetAssessmentAsync(Id);   // refresh balance / late fee / total due
+            success = $"Recorded {Fmt.Money(payment.Amount)} payment on {Fmt.Date(payment.PaidOn)}.";
+            form = new PaymentForm();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        saving = false;
+    }
+
+    private sealed class PaymentForm
+    {
+        public decimal Amount { get; set; } = 100m;
+        public DateTime? PaidOn { get; set; }
+        public string Method { get; set; } = "Check";
+        public string? ReferenceNumber { get; set; }
+    }
+}

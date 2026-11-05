@@ -1,0 +1,84 @@
+@page "/homeowners"
+@rendermode InteractiveServer
+@inject HoaApiClient Api
+
+<PageTitle>Homeowners</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1>Homeowners</h1>
+        <p class="subtitle">Browse homeowners by association</p>
+    </div>
+    <div style="min-width: 280px">
+        <select class="form-select" @onchange="OnAssociationChanged">
+            <option value="">Select an association…</option>
+            @foreach (var a in associations)
+            {
+                <option value="@a.Id" selected="@(a.Id == selectedId)">@a.Name</option>
+            }
+        </select>
+    </div>
+</div>
+
+<ApiError Message="@error" />
+
+<div class="card">
+    <div class="card-header">@(selected?.Name ?? "Homeowners")</div>
+    @if (selected is null)
+    {
+        <div class="card-body text-muted">Pick an association to see its homeowners.</div>
+    }
+    else if (homeowners.Count == 0)
+    {
+        <div class="card-body text-muted">No homeowners in this association. <a href="associations/@selected.Id">Add one</a>.</div>
+    }
+    else
+    {
+        <table class="table table-hover">
+            <thead><tr><th>Name</th><th>Property</th><th>Email</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var h in homeowners)
+                {
+                    <tr>
+                        <td><a href="homeowners/@h.Id">@h.FullName</a></td>
+                        <td>@h.PropertyAddress</td>
+                        <td>@h.Email</td>
+                        <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="homeowners/@h.Id">View</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private List<AssociationDto> associations = [];
+    private List<HomeownerDto> homeowners = [];
+    private int? selectedId;
+    private string? error;
+
+    private AssociationDto? selected => associations.FirstOrDefault(a => a.Id == selectedId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            associations = await Api.GetAssociationsAsync();
+            if (associations.Count > 0) await SelectAsync(associations[0].Id);
+        }
+        catch (Exception ex) { error = ex.Message; }
+    }
+
+    private async Task OnAssociationChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id)) await SelectAsync(id);
+        else { selectedId = null; homeowners = []; }
+    }
+
+    private async Task SelectAsync(int id)
+    {
+        selectedId = id;
+        try { homeowners = await Api.GetHomeownersAsync(id); }
+        catch (Exception ex) { error = ex.Message; }
+    }
+}

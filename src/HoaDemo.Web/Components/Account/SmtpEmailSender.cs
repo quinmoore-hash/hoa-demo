@@ -10,10 +10,17 @@ public sealed class SmtpOptions
 {
     public string Host { get; set; } = "";
     public int Port { get; set; } = 25;
-    public bool EnableSsl { get; set; }
+    /// <summary>Unset means TLS for any host except loopback (e.g. a local Mailpit).</summary>
+    public bool? EnableSsl { get; set; }
     public string? UserName { get; set; }
     public string? Password { get; set; }
     public string From { get; set; } = "no-reply@hoa-demo.local";
+
+    public bool UseSsl => EnableSsl ?? !IsLoopback(Host);
+
+    private static bool IsLoopback(string host) =>
+        string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+        || (IPAddress.TryParse(host, out var ip) && IPAddress.IsLoopback(ip));
 }
 
 /// <summary>Sends Identity emails (password reset, email confirmation/change) through the SMTP server in the "Smtp" config section.</summary>
@@ -31,7 +38,7 @@ internal sealed class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSen
     private async Task SendAsync(string to, string subject, string htmlBody)
     {
         var o = options.Value;
-        using var client = new SmtpClient(o.Host, o.Port) { EnableSsl = o.EnableSsl };
+        using var client = new SmtpClient(o.Host, o.Port) { EnableSsl = o.UseSsl };
         if (!string.IsNullOrEmpty(o.UserName))
         {
             client.Credentials = new NetworkCredential(o.UserName, o.Password);

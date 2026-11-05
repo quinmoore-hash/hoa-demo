@@ -50,6 +50,18 @@ namespace HoaDemo.Tests.Web
             Assert.Contains("https://hoa.test/Account/ResetPassword/abc123", transcript);
         }
 
+        [Theory]
+        [InlineData("smtp.example.com", null, true)]
+        [InlineData("localhost", null, false)]
+        [InlineData("127.0.0.1", null, false)]
+        [InlineData("smtp.example.com", false, false)]
+        [InlineData("localhost", true, true)]
+        public void Tls_is_on_by_default_except_for_loopback_hosts(string host, bool? enableSsl, bool expected)
+        {
+            var options = new Web::HoaDemo.Web.Components.Account.SmtpOptions { Host = host, EnableSsl = enableSsl };
+            Assert.Equal(expected, options.UseSsl);
+        }
+
         private static Dictionary<string, string> SmtpSettings(FakeSmtpServer smtp) => new Dictionary<string, string>
         {
             ["Smtp:Host"] = "127.0.0.1",

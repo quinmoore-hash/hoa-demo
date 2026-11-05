@@ -91,7 +91,8 @@ assessment. The UI applies the Identity migrations and creates the staff login f
 ### Staff logins (non-Development)
 
 There is no self-registration. Set the first login with configuration or environment
-variables (never commit real credentials); it is created on startup if it doesn't exist:
+variables (never commit real credentials); it is created on startup only while no staff
+user exists yet, so later renames or removals stick:
 
 ```bash
 StaffUser__Email=manager@example.com StaffUser__Password='<strong password>' \
@@ -109,7 +110,7 @@ Identity emails are sent over SMTP when `Smtp:Host` is set:
 | ---------------- | ------------------------- |
 | `Smtp:Host`      | _(unset = email disabled)_ |
 | `Smtp:Port`      | `25`                      |
-| `Smtp:EnableSsl` | `false`                   |
+| `Smtp:EnableSsl` | `true`, except for `localhost`/loopback hosts |
 | `Smtp:UserName` / `Smtp:Password` | _(none)_ |
 | `Smtp:From`      | `no-reply@hoa-demo.local` |
 
